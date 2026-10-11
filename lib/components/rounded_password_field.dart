@@ -3,13 +3,17 @@ import 'package:login_app/components/text_field_container.dart';
 import 'package:login_app/constants.dart';
 
 class RoundedPasswordField extends StatelessWidget {
-  final ValueChanged<String> validator;
-  final ValueChanged<String> onSaved;
+  final FormFieldValidator<String>? validator;
+  final FormFieldSetter<String>? onSaved;
   final bool confirm;
-  final TextEditingController controller;
-  const RoundedPasswordField(
-      {Key key, this.validator, this.onSaved, this.confirm, this.controller})
-      : super(key: key);
+  final TextEditingController? controller;
+  const RoundedPasswordField({
+    super.key,
+    this.validator,
+    this.onSaved,
+    this.confirm = false,
+    this.controller,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -22,7 +26,7 @@ class RoundedPasswordField extends StatelessWidget {
         cursorColor: kPrimaryColor,
         decoration: InputDecoration(
           hintText: confirm ? "Confirm Password" : "Password",
-          icon: Icon(
+          icon: const Icon(
             Icons.lock,
             color: kPrimaryColor,
           ),

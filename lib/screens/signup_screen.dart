@@ -45,8 +45,8 @@ class _SignupScreenState extends State<SignupScreen> {
         title: Text('An error Occurred'),
         content: Text(msg),
         actions: [
-          FlatButton(
-            child: Text('Okay'),
+          TextButton(
+            child: const Text('Okay'),
             onPressed: () {
               Navigator.of(ctx).pop();
             },
@@ -57,17 +57,17 @@ class _SignupScreenState extends State<SignupScreen> {
   }
 
   Future<void> _submit() async {
-    if (!_formKey.currentState.validate()) {
+    if (!_formKey.currentState!.validate()) {
       return;
     }
-    _formKey.currentState.save();
+    _formKey.currentState!.save();
 
     try {
       final newUser = await _auth.createUserWithEmailAndPassword(
-          email: _authData['email'], password: _authData['password']);
-      if (newUser != null) {
+          email: _authData['email']!, password: _authData['password']!);
+      if (newUser.user != null) {
         final user = _auth.currentUser;
-        await FirebaseFirestore.instance.collection("users").doc(user.uid).set({
+        await FirebaseFirestore.instance.collection("users").doc(user!.uid).set({
           'firstName': _authData['firstName'],
           'lastName': _authData['lastName'],
         });
@@ -104,54 +104,54 @@ class _SignupScreenState extends State<SignupScreen> {
                 RoundedInputField(
                     hintText: "First Name",
                     validator: (value) {
-                      if (value.isEmpty || value.contains('[0-9]')) {
+                      if (value == null || value.isEmpty || value.contains('[0-9]')) {
                         return 'Invalid Name';
                       }
                       return null;
                     },
                     onSaved: (value) {
-                      _authData['firstName'] = value;
+                      _authData['firstName'] = value ?? '';
                     }),
                 RoundedInputField(
                     hintText: "Last Name",
                     validator: (value) {
-                      if (value.isEmpty || value.contains('[0-9]')) {
+                      if (value == null || value.isEmpty || value.contains('[0-9]')) {
                         return 'Invalid Name';
                       }
                       return null;
                     },
                     onSaved: (value) {
-                      _authData['lastName'] = value;
+                      _authData['lastName'] = value ?? '';
                     }),
                 RoundedInputField(
                     icon: Icons.email,
                     hintText: "Your Email",
                     validator: (value) {
-                      if (value.isEmpty || !value.contains('@')) {
+                      if (value == null || value.isEmpty || !value.contains('@')) {
                         return 'Invalid Email';
                       }
                       return null;
                     },
                     onSaved: (value) {
-                      _authData['email'] = value;
+                      _authData['email'] = value ?? '';
                     }),
                 RoundedPasswordField(
                   confirm: false,
                   controller: _passwordController,
                   validator: (value) {
-                    if (value.isEmpty || value.length <= 5) {
+                    if (value == null || value.isEmpty || value.length <= 5) {
                       return 'Invalid Password';
                     }
                     return null;
                   },
                   onSaved: (value) {
-                    _authData['password'] = value;
+                    _authData['password'] = value ?? '';
                   },
                 ),
                 RoundedPasswordField(
                   confirm: true,
                   validator: (value) {
-                    if (value.isEmpty || value != _passwordController.text) {
+                    if (value == null || value.isEmpty || value != _passwordController.text) {
                       return 'Invalid Password';
                     }
                     return null;

@@ -3,14 +3,13 @@ import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:login_app/screens/components/background.dart';
 import 'package:login_app/screens/login_screen.dart';
 import 'package:permission_handler/permission_handler.dart';
 
-User loggedInUser;
+User? loggedInUser;
 
 class HomeScreen extends StatefulWidget {
   static const routeName = '/home';
@@ -22,8 +21,8 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   final _auth = FirebaseAuth.instance;
   final _firestore = FirebaseFirestore.instance;
-  String firstName;
-  String lastName;
+  String? firstName;
+  String? lastName;
   String imageUrl =
       "https://upload.wikimedia.org/wikipedia/commons/thumb/a/ac/No_image_available.svg/480px-No_image_available.svg.png";
   @override
@@ -35,15 +34,17 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void getData() async {
-    var document = _firestore.collection('users').doc(loggedInUser.uid);
-    document.get().then((DocumentSnapshot documentSnapshot) {
-      if (documentSnapshot.exists) {
-        print(documentSnapshot.data()['firstName']);
+    final user = loggedInUser;
+    if (user == null) return;
+    var document = _firestore.collection('users').doc(user.uid);
+    document.get().then((documentSnapshot) {
+      final data = documentSnapshot.data();
+      if (data != null) {
         setState(() {
-          firstName = documentSnapshot.data()['firstName'];
-          lastName = documentSnapshot.data()['lastName'];
-          imageUrl = documentSnapshot.data()['image'] != null
-              ? documentSnapshot.data()['image']
+          firstName = data['firstName'] as String?;
+          lastName = data['lastName'] as String?;
+          imageUrl = data['image'] != null
+              ? data['image'] as String
               : "https://upload.wikimedia.org/wikipedia/commons/thumb/a/ac/No_image_available.svg/480px-No_image_available.svg.png";
         });
       }
@@ -52,36 +53,32 @@ class _HomeScreenState extends State<HomeScreen> {
 
   void uploadImage() async {
     print("HRER AT THE IMAGE UPLOAD");
-    final _imagePicker = ImagePicker();
-    PickedFile image;
-    //Check Permissions
+    final imagePicker = ImagePicker();
     await Permission.photos.request();
 
     var permissionStatus = await Permission.photos.status;
 
     if (permissionStatus.isGranted) {
-      //Select Image
-      image = await _imagePicker.getImage(source: ImageSource.gallery);
-      var file = File(image.path);
+      final image = await imagePicker.pickImage(source: ImageSource.gallery);
+      final user = loggedInUser;
 
-      if (image != null) {
-        //Upload to Firebase
+      if (image != null && user != null) {
+        var file = File(image.path);
         Reference storageReference =
-            FirebaseStorage.instance.ref().child('images/' + loggedInUser.uid);
-        UploadTask uploadTask = storageReference.putFile(file);
-        uploadTask.whenComplete(() {
-          storageReference.getDownloadURL().then((value) async {
-            await FirebaseFirestore.instance
-                .collection("users")
-                .doc(loggedInUser.uid)
-                .update({'image': value});
-            setState(() {
-              imageUrl = value;
-            });
+            FirebaseStorage.instance.ref().child('images/${user.uid}');
+        try {
+          final snapshot = await storageReference.putFile(file);
+          final value = await snapshot.ref.getDownloadURL();
+          await FirebaseFirestore.instance
+              .collection("users")
+              .doc(user.uid)
+              .update({'image': value});
+          setState(() {
+            imageUrl = value;
           });
-        }).catchError((onError) {
+        } catch (onError) {
           print(onError);
-        });
+        }
       } else {
         print('No Image Path Received');
       }
@@ -133,7 +130,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 style: TextStyle(fontSize: 15, color: Colors.purple),
               ),
               Text(
-                "${loggedInUser.email}",
+                "${loggedInUser?.email ?? ''}",
                 style: TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 25,
@@ -147,7 +144,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 style: TextStyle(fontSize: 15, color: Colors.purple),
               ),
               Text(
-                firstName != null ? firstName : 'first name',
+                firstName ?? 'first name',
                 style: TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 25,
@@ -161,30 +158,32 @@ class _HomeScreenState extends State<HomeScreen> {
                 style: TextStyle(fontSize: 15, color: Colors.purple),
               ),
               Text(
-                lastName != null ? lastName : 'last name',
+                lastName ?? 'last name',
                 style: TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 25,
                     color: Colors.black),
               ),
               SizedBox(height: 10),
-              RaisedButton(
-                child: Text("Upload Image",
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.purple.shade800,
+                  foregroundColor: Colors.white,
+                  elevation: 5.0,
+                  padding: const EdgeInsets.fromLTRB(15, 15, 15, 15),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(18.0),
+                    side: const BorderSide(color: Colors.purple),
+                  ),
+                ),
+                onPressed: () {
+                  uploadImage();
+                },
+                child: const Text("Upload Image",
                     style: TextStyle(
                         color: Colors.white,
                         fontWeight: FontWeight.bold,
                         fontSize: 20)),
-                onPressed: () {
-                  uploadImage();
-                },
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(18.0),
-                    side: BorderSide(color: Colors.purple)),
-                elevation: 5.0,
-                color: Colors.purple.shade800,
-                textColor: Colors.white,
-                padding: EdgeInsets.fromLTRB(15, 15, 15, 15),
-                splashColor: Colors.grey,
               ),
             ],
           ),

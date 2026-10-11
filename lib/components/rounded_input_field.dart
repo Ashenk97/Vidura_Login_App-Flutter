@@ -5,15 +5,15 @@ import 'package:login_app/constants.dart';
 class RoundedInputField extends StatelessWidget {
   final String hintText;
   final IconData icon;
-  final ValueChanged<String> onSaved;
-  final ValueChanged<String> validator;
-  const RoundedInputField(
-      {Key key,
-      this.hintText,
-      this.icon = Icons.person,
-      this.validator,
-      this.onSaved})
-      : super(key: key);
+  final FormFieldSetter<String>? onSaved;
+  final FormFieldValidator<String>? validator;
+  const RoundedInputField({
+    super.key,
+    required this.hintText,
+    this.icon = Icons.person,
+    this.validator,
+    this.onSaved,
+  });
 
   @override
   Widget build(BuildContext context) {

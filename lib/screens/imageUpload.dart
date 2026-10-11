@@ -11,30 +11,25 @@ class ImageUpload extends StatefulWidget {
 }
 
 class _ImageUploadState extends State<ImageUpload> {
-  String imageUrl;
+  String? imageUrl;
 
   void uploadImage() async {
     print("HERE AT THE IMAGE UPLOAD");
-    final _firebaseStorage = FirebaseStorage.instance;
-    final _imagePicker = ImagePicker();
-    PickedFile image;
-    //Check Permissions
+    final firebaseStorage = FirebaseStorage.instance;
+    final imagePicker = ImagePicker();
     await Permission.photos.request();
 
     var permissionStatus = await Permission.photos.status;
 
     if (permissionStatus.isGranted) {
-      //Select Image
-      image = await _imagePicker.getImage(source: ImageSource.gallery);
-      var file = File(image.path);
+      final image = await imagePicker.pickImage(source: ImageSource.gallery);
 
       if (image != null) {
-        //Upload to Firebase
-        var snapshot = _firebaseStorage
+        var file = File(image.path);
+        final snapshot = await firebaseStorage
             .ref()
             .child('images/imageName')
-            .putFile(file)
-            .snapshot;
+            .putFile(file);
         var downloadUrl = await snapshot.ref.getDownloadURL();
         setState(() {
           imageUrl = downloadUrl;
@@ -82,31 +77,33 @@ class _ImageUploadState extends State<ImageUpload> {
                 ],
               ),
               child: (imageUrl != null)
-                  ? Image.network(imageUrl)
+                  ? Image.network(imageUrl!)
                   : Image.network('https://i.imgur.com/sUFH1Aq.png'),
             ),
             SizedBox(
               height: 20.0,
             ),
-            RaisedButton(
-              child: Text(
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.blue,
+                foregroundColor: Colors.white,
+                elevation: 5.0,
+                padding: const EdgeInsets.fromLTRB(15, 15, 15, 15),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(18.0),
+                  side: const BorderSide(color: Colors.blue),
+                ),
+              ),
+              onPressed: () {
+                uploadImage();
+              },
+              child: const Text(
                 "Upload Image",
                 style: TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.bold,
                     fontSize: 20),
               ),
-              onPressed: () {
-                uploadImage();
-              },
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(18.0),
-                  side: BorderSide(color: Colors.blue)),
-              elevation: 5.0,
-              color: Colors.blue,
-              textColor: Colors.white,
-              padding: EdgeInsets.fromLTRB(15, 15, 15, 15),
-              splashColor: Colors.grey,
             ),
           ],
         ),

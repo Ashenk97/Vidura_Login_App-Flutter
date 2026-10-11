@@ -1,4 +1,3 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:login_app/components/already_have_an_account_acheck.dart';
 import 'package:login_app/components/fb_login_btn.dart';
@@ -9,7 +8,6 @@ import 'package:login_app/screens/components/background.dart';
 import 'package:login_app/screens/components/divider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_facebook_auth/flutter_facebook_auth.dart';
-import 'package:flutter_facebook_login/flutter_facebook_login.dart';
 import 'package:flutter_svg/svg.dart';
 import 'signup_screen.dart';
 import 'home_screen.dart';
@@ -23,7 +21,6 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   final GlobalKey<FormState> _formKey = GlobalKey();
 
-  FacebookLogin fbLogin = new FacebookLogin();
   final _auth = FirebaseAuth.instance;
 
   Map<String, String> _authData = {
@@ -48,8 +45,8 @@ class _LoginScreenState extends State<LoginScreen> {
         title: Text('An error Occurred'),
         content: Text(msg),
         actions: [
-          FlatButton(
-            child: Text('Okay'),
+          TextButton(
+            child: const Text('Okay'),
             onPressed: () {
               Navigator.of(ctx).pop();
             },
@@ -60,17 +57,16 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Future<void> _submit() async {
-    if (!_formKey.currentState.validate()) {
+    if (!_formKey.currentState!.validate()) {
       return;
     }
-    _formKey.currentState.save();
+    _formKey.currentState!.save();
 
     try {
-      final user = await _auth.signInWithEmailAndPassword(
-          email: _authData['email'], password: _authData['password']);
-      if (user != null) {
-        Navigator.of(context).pushReplacementNamed((HomeScreen.routeName));
-      }
+      await _auth.signInWithEmailAndPassword(
+          email: _authData['email']!, password: _authData['password']!);
+      if (!mounted) return;
+      Navigator.of(context).pushReplacementNamed((HomeScreen.routeName));
     } catch (error) {
       var errorMessage = 'Authentication failed.';
       _showErrorDialog(errorMessage);
@@ -83,18 +79,16 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
-  Future<UserCredential> signInWithFacebook() async {
-    // Trigger the sign-in flow
-    final AccessToken result =
-        (await FacebookAuth.instance.login()) as AccessToken;
+  Future<UserCredential?> signInWithFacebook() async {
+    final LoginResult result = await FacebookAuth.instance.login();
+    if (result.status != LoginStatus.success || result.accessToken == null) {
+      return null;
+    }
 
-    // Create a credential from the access token
     final facebookAuthCredential =
-        FacebookAuthProvider.credential(result.token);
+        FacebookAuthProvider.credential(result.accessToken!.tokenString);
 
-    // Once signed in, return the UserCredential
-    return await FirebaseAuth.instance
-        .signInWithCredential(facebookAuthCredential);
+    return FirebaseAuth.instance.signInWithCredential(facebookAuthCredential);
   }
 
   @override
@@ -121,24 +115,24 @@ class _LoginScreenState extends State<LoginScreen> {
                 RoundedInputField(
                     hintText: "Your Email",
                     validator: (value) {
-                      if (value.isEmpty || !value.contains('@')) {
+                      if (value == null || value.isEmpty || !value.contains('@')) {
                         return 'Invalid Email';
                       }
                       return null;
                     },
                     onSaved: (value) {
-                      _authData['email'] = value;
+                      _authData['email'] = value ?? '';
                     }),
                 RoundedPasswordField(
                   confirm: false,
                   validator: (value) {
-                    if (value.isEmpty || value.length <= 5) {
+                    if (value == null || value.isEmpty || value.length <= 5) {
                       return 'Invalid Password';
                     }
                     return null;
                   },
                   onSaved: (value) {
-                    _authData['password'] = value;
+                    _authData['password'] = value ?? '';
                   },
                 ),
                 RoundedButton(
@@ -167,7 +161,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   children: <Widget>[
                     SocialIcon(
                       iconSrc: "assets/icons/facebook.svg",
-                      press: () async {
+                      press: () {
                         signInWithFacebook();
                       },
                     ),
